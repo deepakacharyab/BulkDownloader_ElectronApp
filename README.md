@@ -10,7 +10,3 @@ yarn
 
 ## To run the electron app
 npm run electron:serve
-
-
-## Open from the browser
-bulk-downloader://

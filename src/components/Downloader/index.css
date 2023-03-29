@@ -24,3 +24,14 @@
 .text-success {
   color: #2276ac !important;
 }
+.iconColorBlue{
+  color: #2276AC;
+}
+.iconColorRed{
+  color: red;
+}
+.marginAdd{
+  padding-left:3px;
+
+  padding-right:3px;
+}

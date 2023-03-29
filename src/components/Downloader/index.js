@@ -20,7 +20,7 @@ const Downloader = ({ files = [], remove }) => {
     <div className="downloader">
       <div className="card">
         <div className="card-header">File Downloader
-          {files.length > 0 ? <span class='btn-right click-cursor' onClick={() => clearAll(files)}>
+          {files.length > 0 ? <span class='btn-right click-cursor' title="Delete All" onClick={() => clearAll(files)}>
             <FontAwesomeIcon icon="fa-solid fa-trash" />
           </span>:""}
         </div>
@@ -38,16 +38,26 @@ const Downloader = ({ files = [], remove }) => {
   );
 };
 
-const DownloadItem = ({ name, file, filename, removeFile }) => {
-  //console.log('file name', filename);
+const DownloadItem = ({ name, file, filename, removeFile, flag}) => {
+   let [flagStatus, setFlag] = useState(true);
 
   const [downloadInfo, setDownloadInfo] = useState({
+    pause: false,
     progress: 0,
     completed: false,
     total: 0,
     loaded: 0,
-    key: filename
+    key: filename,
+    resume: true
   });
+
+  const pauseClicked  =  (flag) => {
+    if(flag == 'pause') setFlag(false);
+    else setFlag(true);
+    ipcRenderer.send("send-data-event-name", file, filename, flag);
+  }
+
+
 
   useEffect(() => {
  /*   const options = {
@@ -72,7 +82,6 @@ const DownloadItem = ({ name, file, filename, removeFile }) => {
           completed: 'Exist'
         })
       }else{
-        console.log('arg',arg)
         if(arg && arg.progress){
           setDownloadInfo({
             progress: arg.progress,
@@ -82,39 +91,11 @@ const DownloadItem = ({ name, file, filename, removeFile }) => {
             key: filename
           });
         }
+
       }
-      //console.log('downloadInfo', downloadInfo)
     });
 
-    ipcRenderer.send("send-data-event-name", file, filename);
-   /* Axios.get(file, {
-      responseType: "blob",
-      ...options,
-    }).then(function (response) {
-      console.log(response);
-
-      const url = window.URL.createObjectURL(
-        new Blob([response.data], {
-          type: response.headers["content-type"],
-        })
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-
-
-
-      setDownloadInfo((info) => ({
-        ...info,
-        completed: true,
-      }));
-
-      setTimeout(() => {
-        //removeFile();
-      }, 4000);
-    });*/
+    ipcRenderer.send("send-data-event-name", file, filename, 'start');
     
     
   }, []);
@@ -126,6 +107,7 @@ const DownloadItem = ({ name, file, filename, removeFile }) => {
       <div className="row">
         <div className="col-12 d-flex">
           <div className="d-inline font-weight-bold text-truncate">{name}</div>
+
           <div className="d-inline ml-2">
             <small>
               {downloadInfo.loaded > 0 && (
@@ -148,12 +130,13 @@ const DownloadItem = ({ name, file, filename, removeFile }) => {
             {downloadInfo.completed == 'Exist' && (
                 <span className="text-success">
                 Already Downloaded <FontAwesomeIcon icon="check-circle" />
+
               </span>
             )}
           </div>
         </div>
         <div className="col-12 mt-2">
-          <div className="row"><div className="col-11">
+          <div className="row"><div className="col-10">
             <ProgressBar
                 variant="success"
                 now={(downloadInfo.progress).toFixed(2)}
@@ -161,8 +144,12 @@ const DownloadItem = ({ name, file, filename, removeFile }) => {
                 label={`${(downloadInfo.progress).toFixed(2)}%`}
                   key = {downloadInfo.filename}
             /></div>
-            <div className="col-1 trash-icon">
-              <span  onClick={() => removeFile()}> <FontAwesomeIcon icon="fa-solid fa-trash" /> </span>
+            <div className="col-2 trash-icon">
+              {flagStatus && !downloadInfo.completed?<span className={'iconColorBlue'} title="Pause" onClick={() => pauseClicked('pause')}> <FontAwesomeIcon icon="fa-solid fa-circle-pause" size="lg"/></span>:''}
+              <span className={'marginAdd'}></span>
+              {flagStatus? '':<span  className={'iconColorBlue'} title="Resume" onClick={() =>  pauseClicked('play')}> <FontAwesomeIcon icon="fa-solid fa-play" size="lg"/></span>}
+              <span className={'marginAdd'}></span>
+              <span  className={'iconColorRed'} title="Delete" onClick={() => removeFile()}> <FontAwesomeIcon icon="fa-solid fa-trash" size="lg"/> </span>
             </div> </div>
         </div>
       </div>

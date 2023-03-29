@@ -45,7 +45,8 @@ function _registerListener(win, opts = {}) {
   lastWindowCreated = win;
   downloadFolder = opts.downloadFolder || downloadFolder;
 
-  const listener = (e, item) => {
+  const listener = (e, item, web) => {
+
 
     const itemUrl = decodeURIComponent(item.getURLChain()[0] || item.getURL())
     const itemFilename = decodeURIComponent(item.getFilename());
@@ -68,8 +69,20 @@ function _registerListener(win, opts = {}) {
       if (item.getState() === 'interrupted') {
         item.resume();
       }
+      ipcMain.on("send-data-event-name", (event, data, downloadId, flag) => {
 
-      item.on('updated', () => {
+        if(flag == 'pause' && item.getFilename() == downloadId) {
+          item.pause();
+        }
+        if(flag != 'pause'  && item.getFilename() == downloadId) {
+          item.resume();
+        }
+
+
+      })
+      item.on('updated', (x) => {
+       // console.log('web', web);
+        //console.log('xxxxxxx=> ',x)
 
         receivedBytes = item.getReceivedBytes();
         ReceivedBytesArr.push(receivedBytes);
@@ -87,6 +100,7 @@ function _registerListener(win, opts = {}) {
           total: _bytesToSize(totalBytes),
           downloadedBytes: receivedBytes,
           downloaded: _bytesToSize(receivedBytes),
+          state: item.getState()
         }
 
 
@@ -94,6 +108,7 @@ function _registerListener(win, opts = {}) {
           queueItem.onProgress(progress, item);
         }
       });
+
 
       item.on('done', (e, state) => {
 
@@ -130,13 +145,13 @@ function _registerListener(win, opts = {}) {
 }
 
 const register = (opts = {}) => {
-
   app.on('browser-window-created', (e, win) => {
     _registerListener(win, opts);
   });
 };
 
 const download = (options, callback) => {
+
   let win = BrowserWindow.getFocusedWindow() || lastWindowCreated;
   options = Object.assign({}, { path: '' }, options);
 
@@ -167,6 +182,7 @@ const download = (options, callback) => {
     request.on('login', options.onLogin)
   }
 
+
   request.on('error', function (error) {
     let finishedDownloadCallback = callback || function () { };
 
@@ -184,7 +200,7 @@ const download = (options, callback) => {
       downloadFolder: options.downloadFolder,
       path: options.path.toString(),
       callback: callback,
-      onProgress: options.onProgress
+      onProgress: options.onProgress,
     });
 
 
@@ -211,13 +227,14 @@ const download = (options, callback) => {
 
         win.webContents.session.createInterruptedDownload(options);
 
-      } else {
-
+      } else if(options.dee == 'start'){
+         // if(options.dee == 'play') win.webContents.downloadURL(options.url);
         console.log(filename + ' verified, no download needed');
 
         let finishedDownloadCallback = callback || function () {};
 
         finishedDownloadCallback('Exist', { url, filePath });
+
       }
 
     } else {
@@ -228,7 +245,7 @@ const download = (options, callback) => {
   request.end();
 };
 
-const bulkDownload = (options, callback) => {
+/*const bulkDownload = (options, callback) => {
 
   options = Object.assign({}, { urls: [], path: '' }, options);
 
@@ -237,7 +254,7 @@ const bulkDownload = (options, callback) => {
   let errors = [];
 
   options.urls.forEach((url) => {
-    download({ url, path: options.path, onProgress: options.onProgress }, function (error, itemInfo) {
+    download({ url, path: options.path, onProgress: options.onProgress, flag: options.flag }, function (error, itemInfo) {
 
       if (error) {
         errors.push(itemInfo.url);
@@ -261,10 +278,10 @@ const bulkDownload = (options, callback) => {
       }
     });
   });
-};
+};*/
 
 register({
-  downloadFolder: app.getPath("downloads") + "/my-app2"
+  downloadFolder: app.getPath("downloads") + "/bulk_downloader"
 });
 
 require('@electron/remote/main').initialize()
@@ -293,7 +310,7 @@ function createWindow() {
   )
   
   
-  const path2 = app.getPath("downloads") + "/my-app2/";
+  const path2 = app.getPath("downloads") + "/bulk_downloader/";
   ipcMain.on("delete", (event, filenameDelete) => {
     console.log('filenameDelete',filenameDelete)
     try {
@@ -303,17 +320,25 @@ function createWindow() {
       console.error(err);
     }
   })
-  ipcMain.on("send-data-event-name", (event, data, downloadId) => {
+
+
+  ipcMain.on("send-data-event-name", (event, data, downloadId, flag) => {
+    //console.log('queue',event);
+
 
 // here we can process the data
 
 // we can send reply to react using below code
 
-    console.log('daaata = ', data);
+   // console.log('daaata = ', data);
+    //console.log('downloadId = ', downloadId);
+
    // for(var i = 0; i < data.length; i++){
       download({
         url: data,
-        onProgress:  (progress) => { console.log('progress',progress);
+        dee: flag,
+        onProgress:  (progress, item) => { //console.log('progress',progress);
+
           event.reply(downloadId, progress);
         }
 

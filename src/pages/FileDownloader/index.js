@@ -108,7 +108,7 @@ console.log(files());
 
       <div className="container">
           <div className="row">
-          <div className="col-md-6">
+          <div className="col-md-5">
             <div className="demo-content">
               {files().map((file, idx) => (
                   <div className="col" key={idx}>
@@ -129,7 +129,7 @@ console.log(files());
               ))}
             </div>
           </div>
-          <div className="col-md-6">
+          <div className="col-md-7">
             <div className="demo-content bg-alt">
               {downloaderComponentUI}
             </div>
